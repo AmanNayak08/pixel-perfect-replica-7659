@@ -1,24 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
+import BedRadar from "@/components/BedRadar";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
-  component: Index,
+  head: () => ({
+    meta: [
+      { title: "BedRadar — Find General-Ward Hospital Beds Near You" },
+      { name: "description", content: "Compare nearby hospitals by bed availability, distance, admission fee and rating on an interactive map." },
+      { property: "og:title", content: "BedRadar — Smart Hospital Finder" },
+      { property: "og:description", content: "Find, rank and navigate to hospitals with general-ward beds available." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
+  component: BedRadar,
 });
-
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
-  );
-}
