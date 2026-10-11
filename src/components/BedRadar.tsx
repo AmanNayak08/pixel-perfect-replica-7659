@@ -29,8 +29,6 @@ const MODES: { id: Mode; label: string; hint: string }[] = [
   { id: "cheapest", label: "Cheapest", hint: "Lowest admission fee" },
   { id: "rated", label: "Best rated", hint: "Highest rating" },
 ];
-const DISCLAIMER =
-  "Bed availability is based on the supplied dataset and may differ from actual hospital conditions. Please contact the hospital to confirm before travelling.";
 
 type LocSource = "default" | "gps" | "manual" | "map" | "area";
 interface Filters { q: string; type: string; minRating: number; maxFee: string; status: string; maxKm: string; recOnly: boolean }
@@ -170,7 +168,6 @@ export default function BedRadar() {
   );
   if (!raw) return <main className="grid min-h-screen place-items-center text-muted-foreground">{tr("loading")}</main>;
 
-  const sourceLabel = { default: "Default: city centre (not your location)", gps: "Your current location", manual: "Entered coordinates", map: "Picked on map", area: "Selected area" }[source];
 
   return (
     <div className="min-h-screen">
