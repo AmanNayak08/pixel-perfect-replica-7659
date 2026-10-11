@@ -1,0 +1,50 @@
+export type Lang = "en" | "hi" | "or";
+export const LANGS: { id: Lang; label: string; locale: string }[] = [
+  { id: "en", label: "English", locale: "en-IN" },
+  { id: "hi", label: "हिन्दी", locale: "hi-IN" },
+  { id: "or", label: "ଓଡ଼ିଆ", locale: "or-IN" },
+];
+
+const T = {
+  subtitle: ["Find nearby general-ward beds, compare hospitals, and make informed choices.", "आस-पास के जनरल-वार्ड बेड खोजें, अस्पतालों की तुलना करें और सही निर्णय लें।", "ନିକଟସ୍ଥ ଜେନେରାଲ୍-ୱାର୍ଡ ଶଯ୍ୟା ଖୋଜନ୍ତୁ, ହସ୍ପିଟାଲ ତୁଳନା କରନ୍ତୁ ଏବଂ ସଠିକ୍ ନିଷ୍ପତ୍ତି ନିଅନ୍ତୁ।"],
+  hospitals: ["Hospitals", "अस्पताल", "ହସ୍ପିଟାଲ"],
+  bedsFree: ["Beds free", "खाली बेड", "ଖାଲି ଶଯ୍ୟା"],
+  withBeds: ["With beds", "बेड उपलब्ध", "ଶଯ୍ୟା ଉପଲବ୍ଧ"],
+  recommended: ["Recommended", "अनुशंसित", "ସୁପାରିଶ"],
+  disclaimer: ["Bed availability is based on the supplied dataset and may differ from actual hospital conditions. Please contact the hospital to confirm before travelling.", "बेड उपलब्धता दिए गए डेटा पर आधारित है और वास्तविक स्थिति से भिन्न हो सकती है। यात्रा से पहले अस्पताल से पुष्टि करें।", "ଶଯ୍ୟା ଉପଲବ୍ଧତା ଦିଆଯାଇଥିବା ତଥ୍ୟ ଉପରେ ଆଧାରିତ ଏବଂ ପ୍ରକୃତ ସ୍ଥିତିଠାରୁ ଭିନ୍ନ ହୋଇପାରେ। ଯାତ୍ରା ପୂର୍ବରୁ ହସ୍ପିଟାଲ ସହ ନିଶ୍ଚିତ କରନ୍ତୁ।"],
+  yourLocation: ["Your location", "आपका स्थान", "ଆପଣଙ୍କ ସ୍ଥାନ"],
+  useMyLocation: ["Use my location", "मेरा स्थान उपयोग करें", "ମୋ ସ୍ଥାନ ବ୍ୟବହାର କରନ୍ତୁ"],
+  pickOnMap: ["Pick on map", "मानचित्र पर चुनें", "ମାନଚିତ୍ରରେ ବାଛନ୍ତୁ"],
+  clickMap: ["Click the map…", "मानचित्र पर क्लिक करें…", "ମାନଚିତ୍ରରେ କ୍ଲିକ୍ କରନ୍ତୁ…"],
+  area: ["Area in Bhubaneswar", "भुवनेश्वर में क्षेत्र", "ଭୁବନେଶ୍ୱରରେ ଅଞ୍ଚଳ"],
+  chooseArea: ["Choose an area…", "क्षेत्र चुनें…", "ଅଞ୍ଚଳ ବାଛନ୍ତୁ…"],
+  latitude: ["Latitude", "अक्षांश", "ଅକ୍ଷାଂଶ"],
+  longitude: ["Longitude", "देशांतर", "ଦ୍ରାଘିମା"],
+  set: ["Set", "सेट", "ସେଟ୍"],
+  dragTip: ["Tip: drag the blue marker on the map to fine-tune.", "सुझाव: नीले चिह्न को खींचकर स्थान ठीक करें।", "ପରାମର୍ଶ: ନୀଳ ଚିହ୍ନକୁ ଟାଣି ସ୍ଥାନ ଠିକ୍ କରନ୍ତୁ।"],
+  findBest: ["Find the Best Hospital for You", "अपने लिए सबसे अच्छा अस्पताल खोजें", "ଆପଣଙ୍କ ପାଇଁ ଶ୍ରେଷ୍ଠ ହସ୍ପିଟାଲ ଖୋଜନ୍ତୁ"],
+  highlight: ["Highlight", "हाइलाइट", "ହାଇଲାଇଟ୍"],
+  top: ["Top", "शीर्ष", "ଶୀର୍ଷ"],
+  search: ["Search", "खोजें", "ଖୋଜନ୍ତୁ"],
+  clearFilters: ["Clear filters", "फ़िल्टर हटाएँ", "ଫିଲ୍ଟର ହଟାନ୍ତୁ"],
+  shown: ["shown", "दिखाए गए", "ଦେଖାଯାଉଛି"],
+  of: ["of", "में से", "ମଧ୍ୟରୁ"],
+  noMatch: ["No hospitals match these filters.", "इन फ़िल्टर से कोई अस्पताल मेल नहीं खाता।", "ଏହି ଫିଲ୍ଟରରେ କୌଣସି ହସ୍ପିଟାଲ ମିଳିଲା ନାହିଁ।"],
+  compareAll: ["Compare All Hospitals", "सभी अस्पतालों की तुलना करें", "ସମସ୍ତ ହସ୍ପିଟାଲ ତୁଳନା କରନ୍ତୁ"],
+  viewDetails: ["View details", "विवरण देखें", "ବିବରଣୀ ଦେଖନ୍ତୁ"],
+  directions: ["Directions", "दिशा-निर्देश", "ରାସ୍ତା ନିର୍ଦ୍ଦେଶ"],
+  getDirections: ["Get directions in Google Maps", "Google Maps में दिशा-निर्देश", "Google Maps ରେ ରାସ୍ତା ନିର୍ଦ୍ଦେଶ"],
+  back: ["Back to all hospitals", "सभी अस्पतालों पर वापस", "ସମସ୍ତ ହସ୍ପିଟାଲକୁ ଫେରନ୍ତୁ"],
+  howWorks: ["How BedRadar Works", "BedRadar कैसे काम करता है", "BedRadar କିପରି କାମ କରେ"],
+  selected: ["Selected", "चयनित", "ଚୟନିତ"],
+  legend: ["Legend", "संकेत", "ସଙ୍କେତ"],
+  you: ["You", "आप", "ଆପଣ"],
+  Available: ["Available", "उपलब्ध", "ଉପଲବ୍ଧ"],
+  Limited: ["Limited", "सीमित", "ସୀମିତ"],
+  Full: ["Full", "भरा हुआ", "ପୂର୍ଣ୍ଣ"],
+  Unknown: ["Unknown", "अज्ञात", "ଅଜ୍ଞାତ"],
+  loading: ["Loading hospital data…", "अस्पताल डेटा लोड हो रहा है…", "ହସ୍ପିଟାଲ ତଥ୍ୟ ଲୋଡ୍ ହେଉଛି…"],
+} as const;
+
+export type TKey = keyof typeof T;
+export const t = (lang: Lang, k: TKey) => T[k][lang === "en" ? 0 : lang === "hi" ? 1 : 2];

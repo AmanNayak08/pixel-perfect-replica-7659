@@ -2,7 +2,7 @@ import { useEffect, useMemo } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Circle, MapContainer, Marker, Polyline, Popup, TileLayer, useMap, useMapEvents } from "react-leaflet";
-import { formatFee, formatKm, type LatLng, type RankedHospital } from "@/lib/hospitals";
+import { directionsUrl, formatFee, formatKm, type LatLng, type RankedHospital } from "@/lib/hospitals";
 
 interface Props {
   hospitals: RankedHospital[];
@@ -13,6 +13,7 @@ interface Props {
   onSelect: (id: string) => void;
   onDetails: (id: string) => void;
   onUserMove: (p: LatLng) => void;
+  origin: LatLng | null;
 }
 
 const userIcon = L.divIcon({ className: "", html: '<div class="br-user"></div>', iconSize: [22, 22], iconAnchor: [11, 11] });
@@ -45,7 +46,7 @@ function Controller({ hospitals, user, selectedId, pickMode, onUserMove }: Props
 }
 
 export default function HospitalMap(props: Props) {
-  const { hospitals, user, topN, selectedId, onSelect, onDetails, onUserMove } = props;
+  const { hospitals, user, topN, selectedId, onSelect, onDetails, onUserMove, origin } = props;
   const plotted = useMemo(() => hospitals.filter((h) => h.hasValidCoords), [hospitals]);
   return (
     <MapContainer center={[user.lat, user.lng]} zoom={12} className="h-full w-full" scrollWheelZoom>
@@ -81,6 +82,7 @@ export default function HospitalMap(props: Props) {
                   <div>{formatKm(h.distance)} · {formatFee(h.fee)}</div>
                   <div>★ {h.rating ?? "—"} · {h.availableBeds ?? "—"} beds free ({h.status})</div>
                   <button type="button" onClick={() => onDetails(h.id)}>View details</button>
+                  {directionsUrl(h, origin) && <a className="br-dir" href={directionsUrl(h, origin)!} target="_blank" rel="noreferrer">Get directions ↗</a>}
                 </div>
               </Popup>
             </Marker>

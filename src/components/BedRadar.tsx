@@ -8,6 +8,8 @@ import {
   directionsUrl, formatFee, formatKm, formatNum, parseHospitalsCsv, rankHospitals, validCoords,
   type Hospital, type LatLng, type Mode, type RankedHospital, type Status,
 } from "@/lib/hospitals";
+import { LANGS, t, type Lang } from "@/lib/i18n";
+import { Languages, CalendarDays } from "lucide-react";
 
 const HospitalMap = lazy(() => import("./HospitalMap"));
 
@@ -27,8 +29,6 @@ const MODES: { id: Mode; label: string; hint: string }[] = [
   { id: "cheapest", label: "Cheapest", hint: "Lowest admission fee" },
   { id: "rated", label: "Best rated", hint: "Highest rating" },
 ];
-const DISCLAIMER =
-  "Bed availability is based on the supplied dataset and may differ from actual hospital conditions. Please contact the hospital to confirm before travelling.";
 
 type LocSource = "default" | "gps" | "manual" | "map" | "area";
 interface Filters { q: string; type: string; minRating: number; maxFee: string; status: string; maxKm: string; recOnly: boolean }
@@ -43,10 +43,10 @@ const statusStyle: Record<Status, string> = {
 const barStyle: Record<Status, string> = { Available: "bg-available", Limited: "bg-limited", Full: "bg-full", Unknown: "bg-muted-foreground" };
 const statusIcon: Record<Status, string> = { Available: "●", Limited: "◐", Full: "○", Unknown: "?" };
 
-function StatusBadge({ s }: { s: Status }) {
+function StatusBadge({ s, lang }: { s: Status; lang: Lang }) {
   return (
     <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold ${statusStyle[s]}`}>
-      <span aria-hidden>{statusIcon[s]}</span>{s}
+      <span aria-hidden>{statusIcon[s]}</span>{t(lang, s)}
     </span>
   );
 }
@@ -73,6 +73,10 @@ export default function BedRadar() {
   const [detailId, setDetailId] = useState<string | null>(null);
   const [pickMode, setPickMode] = useState(false);
   const [dark, setDark] = useState(false);
+  const [lang, setLang] = useState<Lang>("en");
+  const [today, setToday] = useState("");
+  useEffect(() => { const loc = LANGS.find((l) => l.id === lang)!.locale; setToday(new Date().toLocaleDateString(loc, { weekday: "long", day: "numeric", month: "long", year: "numeric" })); document.documentElement.lang = lang; }, [lang]);
+  const tr = (k: Parameters<typeof t>[1]) => t(lang, k);
   const [sortKey, setSortKey] = useState<"rank" | "distance" | "fee" | "rating" | "beds">("rank");
   const [sortAsc, setSortAsc] = useState(true);
 
@@ -86,7 +90,7 @@ export default function BedRadar() {
 
   const ranked = useMemo(() => (raw ? rankHospitals(raw, user, mode) : []), [raw, user, mode]);
   const maxN = Math.max(1, ranked.length);
-  useEffect(() => { if (topN > maxN) setTopN(maxN); }, [maxN, topN]);
+  useEffect(() => { if (ranked.length && topN > maxN) setTopN(maxN); }, [maxN, topN, ranked.length]);
   const types = useMemo(() => Array.from(new Set(ranked.map((h) => h.type).filter(Boolean))) as string[], [ranked]);
 
   const filtered = useMemo(() => {
@@ -122,6 +126,8 @@ export default function BedRadar() {
   }), [ranked, topN]);
 
   const origin = source === "default" ? null : user;
+  const selected = ranked.find((h) => h.id === selectedId) ?? null;
+  const selDir = selected ? directionsUrl(selected, origin) : null;
   const detail = ranked.find((h) => h.id === detailId) ?? null;
   const filtersActive = JSON.stringify(filters) !== JSON.stringify(EMPTY_FILTERS);
 
@@ -160,28 +166,36 @@ export default function BedRadar() {
       </div>
     </main>
   );
-  if (!raw) return <main className="grid min-h-screen place-items-center text-muted-foreground">Loading hospital data…</main>;
+  if (!raw) return <main className="grid min-h-screen place-items-center text-muted-foreground">{tr("loading")}</main>;
 
-  const sourceLabel = { default: "Default: city centre (not your location)", gps: "Your current location", manual: "Entered coordinates", map: "Picked on map", area: "Selected area" }[source];
 
   return (
     <div className="min-h-screen">
       {/* Header */}
       <header className="border-b border-border bg-card">
+        <div className="border-b border-border bg-muted">
+          <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-2 px-4 py-1.5 text-xs sm:px-6">
+            <span className="flex items-center gap-1.5 font-semibold"><CalendarDays className="h-3.5 w-3.5 text-primary" aria-hidden />{today}</span>
+            <div className="flex items-center gap-1" role="group" aria-label="Language">
+              <Languages className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
+              {LANGS.map((l) => <button key={l.id} onClick={() => setLang(l.id)} aria-pressed={lang === l.id} className={`rounded-md px-2 py-0.5 font-semibold ${lang === l.id ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}>{l.label}</button>)}
+            </div>
+          </div>
+        </div>
         <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
           <div className="flex items-center gap-3">
             <div className="grid h-11 w-11 place-items-center rounded-xl bg-primary text-primary-foreground"><Activity /></div>
             <div>
               <h1 className="text-2xl font-extrabold text-foreground">BedRadar</h1>
-              <p className="text-sm text-muted-foreground">Find nearby general-ward beds, compare hospitals, and make informed choices.</p>
+              <p className="text-sm text-muted-foreground">{tr("subtitle")}</p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {[
-              { k: "Hospitals", v: stats.total, i: Building2 },
-              { k: "Beds free", v: formatNum(stats.beds), i: BedDouble },
-              { k: "With beds", v: stats.withBeds, i: Activity },
-              { k: "Recommended", v: stats.rec, i: Trophy },
+              { k: tr("hospitals"), v: stats.total, i: Building2 },
+              { k: tr("bedsFree"), v: formatNum(stats.beds), i: BedDouble },
+              { k: tr("withBeds"), v: stats.withBeds, i: Activity },
+              { k: tr("recommended"), v: stats.rec, i: Trophy },
             ].map(({ k, v, i: I }) => (
               <div key={k} className="flex items-center gap-2 rounded-xl border border-border bg-muted px-3 py-2">
                 <I className="h-4 w-4 text-primary" aria-hidden />
@@ -192,40 +206,39 @@ export default function BedRadar() {
           </div>
         </div>
         <div className="border-t border-border bg-limited-soft">
-          <p className="mx-auto flex max-w-[1440px] items-start gap-2 px-4 py-2 text-xs text-foreground sm:px-6"><Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />{DISCLAIMER}</p>
+          <p className="mx-auto flex max-w-[1440px] items-start gap-2 px-4 py-2 text-xs text-foreground sm:px-6"><Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />{tr("disclaimer")}</p>
         </div>
       </header>
 
       <main className="mx-auto max-w-[1440px] space-y-6 px-4 py-6 sm:px-6">
-        {missingCols.length > 0 && <p className="text-xs text-muted-foreground">Columns not present in the CSV (shown as “—”): {missingCols.join(", ")}.</p>}
         <div className="grid gap-6 lg:grid-cols-[400px_1fr]">
           {/* Left column */}
           <div className="space-y-6">
             <section className={`${card} p-5`} aria-labelledby="loc-h">
-              <h2 id="loc-h" className="mb-1 flex items-center gap-2 text-lg font-bold"><MapPin className="h-5 w-5 text-locate" />Your location</h2>
-              <p className="mb-4 text-xs text-muted-foreground">{sourceLabel} · {user.lat.toFixed(4)}, {user.lng.toFixed(4)}</p>
+              <h2 id="loc-h" className="mb-1 flex items-center gap-2 text-lg font-bold"><MapPin className="h-5 w-5 text-locate" />{tr("yourLocation")}</h2>
+<div className="mb-4" />
               <div className="grid grid-cols-2 gap-2">
-                <button className={btnLocate} onClick={useGps}><LocateFixed className="h-4 w-4" />Use my location</button>
-                <button className={pickMode ? btnPrimary : btnGhost} onClick={() => setPickMode(!pickMode)} aria-pressed={pickMode}><MousePointerClick className="h-4 w-4" />{pickMode ? "Click the map…" : "Pick on map"}</button>
+                <button className={btnLocate} onClick={useGps}><LocateFixed className="h-4 w-4" />{tr("useMyLocation")}</button>
+                <button className={pickMode ? btnPrimary : btnGhost} onClick={() => setPickMode(!pickMode)} aria-pressed={pickMode}><MousePointerClick className="h-4 w-4" />{pickMode ? tr("clickMap") : tr("pickOnMap")}</button>
               </div>
               <div className="mt-4">
-                <label className={label} htmlFor="area">Area in Bhubaneswar</label>
+                <label className={label} htmlFor="area">{tr("area")}</label>
                 <select id="area" className={input} defaultValue="" onChange={(e) => { const a = AREAS.find((x) => x.name === e.target.value); if (a) moveUser(a.loc, "area", `Moved to ${a.name} (approximate centre).`); }}>
-                  <option value="" disabled>Choose an area…</option>
+                  <option value="" disabled>{tr("chooseArea")}</option>
                   {AREAS.map((a) => <option key={a.name}>{a.name}</option>)}
                 </select>
               </div>
               <form className="mt-4 grid grid-cols-[1fr_1fr_auto] items-end gap-2" onSubmit={(e) => { e.preventDefault(); applyManual(); }}>
-                <div><label className={label} htmlFor="lat">Latitude</label><input id="lat" className={input} inputMode="decimal" value={manual.lat} onChange={(e) => setManual({ ...manual, lat: e.target.value })} /></div>
-                <div><label className={label} htmlFor="lng">Longitude</label><input id="lng" className={input} inputMode="decimal" value={manual.lng} onChange={(e) => setManual({ ...manual, lng: e.target.value })} /></div>
-                <button type="submit" className={btnGhost}><Crosshair className="h-4 w-4" />Set</button>
+                <div><label className={label} htmlFor="lat">{tr("latitude")}</label><input id="lat" className={input} inputMode="decimal" value={manual.lat} onChange={(e) => setManual({ ...manual, lat: e.target.value })} /></div>
+                <div><label className={label} htmlFor="lng">{tr("longitude")}</label><input id="lng" className={input} inputMode="decimal" value={manual.lng} onChange={(e) => setManual({ ...manual, lng: e.target.value })} /></div>
+                <button type="submit" className={btnGhost}><Crosshair className="h-4 w-4" />{tr("set")}</button>
               </form>
               {locMsg && <p role="status" className={`mt-3 rounded-lg px-3 py-2 text-xs ${locMsg.kind === "err" ? "bg-full-soft text-full" : "bg-available-soft text-foreground"}`}>{locMsg.text}</p>}
-              <p className="mt-3 text-xs text-muted-foreground">Tip: drag the blue marker on the map to fine-tune.</p>
+              <p className="mt-3 text-xs text-muted-foreground">{tr("dragTip")}</p>
             </section>
 
             <section className={`${card} p-5`} aria-labelledby="rank-h">
-              <h2 id="rank-h" className="mb-4 flex items-center gap-2 text-lg font-bold"><Trophy className="h-5 w-5 text-primary" />Find the Best Hospital for You</h2>
+              <h2 id="rank-h" className="mb-4 flex items-center gap-2 text-lg font-bold"><Trophy className="h-5 w-5 text-primary" />{tr("findBest")}</h2>
               <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Ranking mode">
                 {MODES.map((m) => (
                   <button key={m.id} role="radio" aria-checked={mode === m.id} onClick={() => setMode(m.id)}
@@ -235,7 +248,7 @@ export default function BedRadar() {
                 ))}
               </div>
               <div className="mt-5">
-                <div className="mb-2 flex justify-between text-sm"><label htmlFor="topn" className="font-semibold">Highlight</label><span className="font-bold text-primary">Top {topN} hospital{topN > 1 ? "s" : ""}</span></div>
+                <div className="mb-2 flex justify-between text-sm"><label htmlFor="topn" className="font-semibold">{tr("highlight")}</label><span className="font-bold text-primary">{tr("top")} {topN} hospital{topN > 1 ? "s" : ""}</span></div>
                 <input id="topn" type="range" min={1} max={maxN} value={Math.min(topN, maxN)} onChange={(e) => setTopN(Number(e.target.value))} className="w-full" />
                 <div className="flex justify-between text-[11px] text-muted-foreground"><span>1</span><span>{maxN}</span></div>
               </div>
@@ -249,17 +262,17 @@ export default function BedRadar() {
                 <Suspense fallback={<div className="grid h-full place-items-center text-muted-foreground">Loading map…</div>}>
                   <div className="absolute inset-0">
                     <HospitalMap hospitals={ranked} user={user} topN={topN} selectedId={selectedId} pickMode={pickMode}
-                      onSelect={select} onDetails={openDetails} onUserMove={(p) => moveUser(p, "map", "Location set on the map.")} />
+                      onSelect={select} onDetails={openDetails} origin={origin} onUserMove={(p) => moveUser(p, "map", "Location set on the map.")} />
                   </div>
                 </Suspense>
               </ClientOnly>
             </div>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border px-4 py-3 text-xs">
-              <span className="font-semibold">Legend</span>
-              <span className="flex items-center gap-1.5"><i className="h-3 w-3 rounded-full bg-locate" />You</span>
-              <span className="flex items-center gap-1.5"><i className="h-3 w-3 rounded-full bg-available" />Available</span>
-              <span className="flex items-center gap-1.5"><i className="h-3 w-3 rounded-full bg-limited" />Limited</span>
-              <span className="flex items-center gap-1.5"><i className="h-3 w-3 rounded-full bg-full" />Full</span>
+              <span className="font-semibold">{tr("legend")}</span>
+              <span className="flex items-center gap-1.5"><i className="h-3 w-3 rounded-full bg-locate" />{tr("you")}</span>
+              <span className="flex items-center gap-1.5"><i className="h-3 w-3 rounded-full bg-available" />{tr("Available")}</span>
+              <span className="flex items-center gap-1.5"><i className="h-3 w-3 rounded-full bg-limited" />{tr("Limited")}</span>
+              <span className="flex items-center gap-1.5"><i className="h-3 w-3 rounded-full bg-full" />{tr("Full")}</span>
               <span className="flex items-center gap-1.5"><i className="grid h-4 w-4 place-items-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">1</i>Numbered = Top {topN}</span>
               <span className="text-muted-foreground">Rings: 2 / 5 / 10 km</span>
             </div>
@@ -269,12 +282,12 @@ export default function BedRadar() {
         {/* Filters + cards */}
         <section aria-labelledby="list-h" className="space-y-4">
           <div className="flex flex-wrap items-end justify-between gap-3">
-            <h2 id="list-h" className="text-xl font-bold">Hospitals <span className="text-sm font-medium text-muted-foreground">· {filtered.length} of {ranked.length} shown</span></h2>
-            {filtersActive && <button className={btnGhost} onClick={() => setFilters(EMPTY_FILTERS)}><X className="h-4 w-4" />Clear filters</button>}
+            <h2 id="list-h" className="text-xl font-bold">{tr("hospitals")} <span className="text-sm font-medium text-muted-foreground">· {filtered.length} {tr("of")} {ranked.length} {tr("shown")}</span></h2>
+            {filtersActive && <button className={btnGhost} onClick={() => setFilters(EMPTY_FILTERS)}><X className="h-4 w-4" />{tr("clearFilters")}</button>}
           </div>
           <div className={`${card} grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-7`}>
             <div className="relative sm:col-span-2">
-              <label className={label} htmlFor="q">Search</label>
+              <label className={label} htmlFor="q">{tr("search")}</label>
               <Search className="pointer-events-none absolute bottom-2.5 left-3 h-4 w-4 text-muted-foreground" />
               <input id="q" className={`${input} pl-9`} placeholder="Name or address" value={filters.q} onChange={(e) => setFilters({ ...filters, q: e.target.value })} />
             </div>
@@ -300,12 +313,12 @@ export default function BedRadar() {
           {filtered.length === 0 ? (
             <div className={`${card} p-10 text-center`}>
               <Search className="mx-auto mb-2 text-muted-foreground" />
-              <p className="font-semibold">No hospitals match these filters.</p>
-              <button className={`${btnPrimary} mt-4`} onClick={() => setFilters(EMPTY_FILTERS)}>Clear filters</button>
+              <p className="font-semibold">{tr("noMatch")}</p>
+              <button className={`${btnPrimary} mt-4`} onClick={() => setFilters(EMPTY_FILTERS)}>{tr("clearFilters")}</button>
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {filtered.map((h) => <HospitalCard key={h.id} h={h} rec={h.rank <= topN} selected={h.id === selectedId} origin={origin}
+              {filtered.map((h) => <HospitalCard key={h.id} h={h} rec={h.rank <= topN} selected={h.id === selectedId} origin={origin} lang={lang}
                 onSelect={() => setSelectedId(h.id)} onDetails={() => openDetails(h.id)} />)}
             </div>
           )}
@@ -313,7 +326,7 @@ export default function BedRadar() {
 
         {/* Table */}
         <section aria-labelledby="cmp-h" className={`${card} overflow-hidden`}>
-          <div className="p-5 pb-3"><h2 id="cmp-h" className="text-xl font-bold">Compare All Hospitals</h2>
+          <div className="p-5 pb-3"><h2 id="cmp-h" className="text-xl font-bold">{tr("compareAll")}</h2>
             <p className="text-xs text-muted-foreground">Every hospital in the dataset. Click a column with <ArrowDownUp className="inline h-3 w-3" /> to sort; click a row to select it on the map.</p></div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1100px] text-sm">
@@ -341,7 +354,7 @@ export default function BedRadar() {
                       <td className="px-3 py-2.5 tabular-nums">{formatNum(h.totalBeds)}</td>
                       <td className="px-3 py-2.5 font-semibold tabular-nums">{formatNum(h.availableBeds)}</td>
                       <td className="px-3 py-2.5 tabular-nums">{h.occupancy !== null ? `${h.occupancy}%` : "—"}</td>
-                      <td className="px-3 py-2.5"><StatusBadge s={h.status} /></td>
+                      <td className="px-3 py-2.5"><StatusBadge lang={lang} s={h.status} /></td>
                       <td className="px-3 py-2.5">{h.website ? <a href={h.website} target="_blank" rel="noreferrer" className="text-locate underline" onClick={(e) => e.stopPropagation()}>Visit</a> : <span className="text-muted-foreground">Not listed</span>}</td>
                       <td className="px-3 py-2.5">{d ? <a href={d} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold text-locate" onClick={(e) => e.stopPropagation()}><Navigation className="h-3.5 w-3.5" />Go</a> : "—"}</td>
                     </tr>
@@ -352,16 +365,26 @@ export default function BedRadar() {
           </div>
         </section>
 
-        <HowItWorks />
+        <HowItWorks lang={lang} />
       </main>
-      <footer className="px-6 pb-8 text-center text-xs text-muted-foreground">BedRadar · Data from hospitals.csv · Map © OpenStreetMap contributors · Not a medical service.</footer>
+      <footer className="px-6 pb-24 text-center text-xs text-muted-foreground">BedRadar · Data from hospitals.csv · Map © OpenStreetMap contributors · Not a medical service.</footer>
 
-      {detail && <DetailsPanel h={detail} rec={detail.rank <= topN} mode={mode} origin={origin} onClose={() => setDetailId(null)} />}
+      {selected && (
+        <div className="fixed inset-x-0 bottom-0 z-[1500] border-t border-border bg-card shadow-card">
+          <div className="mx-auto flex max-w-[1440px] flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
+            <div className="min-w-0 flex-1"><div className="text-[11px] uppercase text-muted-foreground">{tr("selected")} · #{selected.rank}</div><div className="truncate font-bold">{selected.name} · {formatKm(selected.distance)}</div></div>
+            {selDir && <a href={selDir} target="_blank" rel="noreferrer" className={btnLocate}><Navigation className="h-4 w-4" />{tr("directions")}</a>}
+            <button className={btnGhost} onClick={() => setDetailId(selected.id)}>{tr("viewDetails")}</button>
+            <button className={btnGhost} onClick={() => setSelectedId(null)} aria-label="Close"><X className="h-4 w-4" /></button>
+          </div>
+        </div>
+      )}
+      {detail && <DetailsPanel h={detail} rec={detail.rank <= topN} mode={mode} origin={origin} lang={lang} onClose={() => setDetailId(null)} />}
     </div>
   );
 }
 
-function HospitalCard({ h, rec, selected, origin, onSelect, onDetails }: { h: RankedHospital; rec: boolean; selected: boolean; origin: LatLng | null; onSelect: () => void; onDetails: () => void }) {
+function HospitalCard({ h, rec, selected, origin, lang, onSelect, onDetails }: { lang: Lang; h: RankedHospital; rec: boolean; selected: boolean; origin: LatLng | null; onSelect: () => void; onDetails: () => void }) {
   const d = directionsUrl(h, origin);
   const pct = h.totalBeds && h.availableBeds !== null ? Math.min(100, (h.availableBeds / h.totalBeds) * 100) : 0;
   return (
@@ -373,7 +396,7 @@ function HospitalCard({ h, rec, selected, origin, onSelect, onDetails }: { h: Ra
           {rec && <span className="rounded-full bg-accent px-2 py-0.5 text-[11px] font-bold text-accent-foreground">Recommended</span>}
           {h.type && <span className="text-xs text-muted-foreground">{h.type}</span>}
         </div>
-        <StatusBadge s={h.status} />
+        <StatusBadge lang={lang} s={h.status} />
       </div>
       <h3 className="text-base font-bold leading-snug">{h.name}</h3>
       {h.address && <p className="mt-0.5 text-xs text-muted-foreground">{h.address}</p>}
@@ -387,15 +410,15 @@ function HospitalCard({ h, rec, selected, origin, onSelect, onDetails }: { h: Ra
         <div className="h-2 overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100} aria-label="Share of beds available"><div className={`h-full ${barStyle[h.status]}`} style={{ width: `${pct}%` }} /></div>
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
-        <button className={`${btnGhost} flex-1`} onClick={(e) => { e.stopPropagation(); onDetails(); }}>View details</button>
-        {d && <a href={d} target="_blank" rel="noreferrer" className={`${btnLocate} flex-1`} onClick={(e) => e.stopPropagation()}><Navigation className="h-4 w-4" />Directions</a>}
+        <button className={`${btnGhost} flex-1`} onClick={(e) => { e.stopPropagation(); onDetails(); }}>{t(lang, "viewDetails")}</button>
+        {d && <a href={d} target="_blank" rel="noreferrer" className={`${btnLocate} flex-1`} onClick={(e) => e.stopPropagation()}><Navigation className="h-4 w-4" />{t(lang, "directions")}</a>}
         {h.website && <a href={h.website} target="_blank" rel="noreferrer" className={btnGhost} onClick={(e) => e.stopPropagation()} aria-label="Website"><ExternalLink className="h-4 w-4" /></a>}
       </div>
     </article>
   );
 }
 
-function DetailsPanel({ h, rec, mode, origin, onClose }: { h: RankedHospital; rec: boolean; mode: Mode; origin: LatLng | null; onClose: () => void }) {
+function DetailsPanel({ h, rec, mode, origin, lang, onClose }: { lang: Lang; h: RankedHospital; rec: boolean; mode: Mode; origin: LatLng | null; onClose: () => void }) {
   const d = directionsUrl(h, origin);
   useEffect(() => { const k = (e: KeyboardEvent) => e.key === "Escape" && onClose(); window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [onClose]);
   const rows: [string, string][] = [
@@ -410,27 +433,27 @@ function DetailsPanel({ h, rec, mode, origin, onClose }: { h: RankedHospital; re
     <div className="fixed inset-0 z-[2000] flex justify-end bg-foreground/30" onClick={onClose}>
       <aside role="dialog" aria-modal="true" aria-labelledby="dlg-h" className="h-full w-full max-w-md overflow-y-auto bg-card p-6 shadow-card" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-start justify-between gap-3">
-          <div><StatusBadge s={h.status} /><h2 id="dlg-h" className="mt-2 text-2xl font-bold">{h.name}</h2></div>
+          <div><StatusBadge lang={lang} s={h.status} /><h2 id="dlg-h" className="mt-2 text-2xl font-bold">{h.name}</h2></div>
           <button className={btnGhost} onClick={onClose} aria-label="Close" autoFocus><X className="h-4 w-4" /></button>
         </div>
         <dl className="divide-y divide-border text-sm">
           {rows.map(([k, v]) => <div key={k} className="flex justify-between gap-4 py-2"><dt className="text-muted-foreground">{k}</dt><dd className="text-right font-semibold">{v}</dd></div>)}
         </dl>
-        <p className="mt-4 rounded-lg bg-limited-soft p-3 text-xs">{DISCLAIMER}</p>
+        <p className="mt-4 rounded-lg bg-limited-soft p-3 text-xs">{t(lang, "disclaimer")}</p>
         <div className="mt-4 grid gap-2">
-          {d && <a href={d} target="_blank" rel="noreferrer" className={btnLocate}><Navigation className="h-4 w-4" />Get directions in Google Maps</a>}
+          {d && <a href={d} target="_blank" rel="noreferrer" className={btnLocate}><Navigation className="h-4 w-4" />{t(lang, "getDirections")}</a>}
           {h.website ? <a href={h.website} target="_blank" rel="noreferrer" className={btnGhost}><ExternalLink className="h-4 w-4" />Hospital website</a> : <p className="text-center text-xs text-muted-foreground">No website listed in the dataset.</p>}
-          <button className={btnGhost} onClick={onClose}>Back to all hospitals</button>
+          <button className={btnGhost} onClick={onClose}>{t(lang, "back")}</button>
         </div>
       </aside>
     </div>
   );
 }
 
-function HowItWorks() {
+function HowItWorks({ lang }: { lang: Lang }) {
   return (
     <details className={`${card} group p-5`}>
-      <summary className="flex cursor-pointer list-none items-center justify-between text-xl font-bold">How BedRadar Works<ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" /></summary>
+      <summary className="flex cursor-pointer list-none items-center justify-between text-xl font-bold">{t(lang, "howWorks")}<ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" /></summary>
       <div className="mt-4 grid gap-6 text-sm lg:grid-cols-2">
         <ol className="list-decimal space-y-2 pl-5">
           <li>BedRadar reads hospital records from <code>hospitals.csv</code> when the page opens.</li>
@@ -444,15 +467,9 @@ function HowItWorks() {
         <div className="space-y-3">
           <div className="rounded-xl bg-muted p-4">
             <div className="text-xs font-semibold uppercase text-muted-foreground">Recommended-mode formula</div>
-            <code className="mt-1 block text-base font-bold">Score = −Admission Fee − Distance (km) + 1000 × Rating</code>
             <p className="mt-2 text-xs text-muted-foreground">Higher is better; ties go to the closer hospital. The terms use different units (rupees, kilometres, stars), so fee and rating dominate while distance has a small effect. This is a simple heuristic — not a medically validated measure and no guarantee of the best clinical outcome.</p>
           </div>
-          <ul className="space-y-1 text-xs">
-            <li><b>Dataset values:</b> name, type, address, coordinates, beds, occupancy, fee, rating, reviews.</li>
-            <li><b>Calculated values:</b> distance, score, rank.</li>
-            <li><b>App-defined labels:</b> Available / Limited / Full, Recommended.</li>
-            <li><b>Cannot be verified:</b> live bed availability — always call the hospital first.</li>
-          </ul>
+
         </div>
       </div>
     </details>
