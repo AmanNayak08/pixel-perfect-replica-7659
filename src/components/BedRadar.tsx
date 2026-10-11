@@ -90,7 +90,7 @@ export default function BedRadar() {
 
   const ranked = useMemo(() => (raw ? rankHospitals(raw, user, mode) : []), [raw, user, mode]);
   const maxN = Math.max(1, ranked.length);
-  useEffect(() => { if (topN > maxN) setTopN(maxN); }, [maxN, topN]);
+  useEffect(() => { if (ranked.length && topN > maxN) setTopN(maxN); }, [maxN, topN, ranked.length]);
   const types = useMemo(() => Array.from(new Set(ranked.map((h) => h.type).filter(Boolean))) as string[], [ranked]);
 
   const filtered = useMemo(() => {
