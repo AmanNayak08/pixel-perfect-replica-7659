@@ -181,3 +181,4 @@
 .br-popup { display: grid; gap: 4px; font: 13px var(--font-sans); min-width: 180px; }
 .br-popup button { margin-top: 4px; padding: 4px 8px; border-radius: 6px; background: var(--primary); color: var(--primary-foreground); font-weight: 600; }
 .leaflet-container { font-family: var(--font-sans); background: var(--muted); }
+.br-popup .br-dir { text-align: center; padding: 4px 8px; border-radius: 6px; background: var(--locate); color: var(--primary-foreground) !important; font-weight: 600; text-decoration: none; }
