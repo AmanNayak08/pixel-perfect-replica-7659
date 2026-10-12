@@ -1,8 +1,8 @@
 export type Lang = "en" | "hi" | "or";
 export const LANGS: { id: Lang; label: string; locale: string }[] = [
   { id: "en", label: "English", locale: "en-IN" },
-  { id: "hi", label: "हिन्दी", locale: "hi-IN" },
-  { id: "or", label: "ଓଡ଼ିଆ", locale: "or-IN" },
+  { id: "hi", label: "हिन्दी", locale: "hi-IN-u-nu-deva" },
+  { id: "or", label: "ଓଡ଼ିଆ", locale: "or-IN-u-nu-orya" },
 ];
 
 const T = {
@@ -47,4 +47,166 @@ const T = {
 } as const;
 
 export type TKey = keyof typeof T;
-export const t = (lang: Lang, k: TKey) => T[k][lang === "en" ? 0 : lang === "hi" ? 1 : 2];
+export const t = (lang: Lang, k: TKey): string => d(T[k][lang === "en" ? 0 : lang === "hi" ? 1 : 2], lang);
+
+// ---- Full-page translation (strings, hospital data, digits) ----
+let CURRENT: Lang = "en";
+export const setCurrentLang = (l: Lang) => { CURRENT = l; };
+export const getCurrentLang = () => CURRENT;
+
+const DIGIT_BASE: Record<Lang, number> = { en: 0, hi: 0x0966, or: 0x0b66 };
+/** Convert ASCII digits to the active script's digits. */
+export function d(v: string | number, lang: Lang = CURRENT): string {
+  const s = String(v);
+  if (lang === "en") return s;
+  const base = DIGIT_BASE[lang];
+  return s.replace(/[0-9]/g, (c) => String.fromCharCode(base + Number(c)));
+}
+
+const DICT: Record<string, [string, string]> = {
+  // UI
+  "Recommended": ["अनुशंसित", "ସୁପାରିଶ"],
+  "Nearest": ["सबसे नज़दीक", "ନିକଟତମ"],
+  "Cheapest": ["सबसे सस्ता", "ଶସ୍ତା"],
+  "Best rated": ["सर्वश्रेष्ठ रेटिंग", "ସର୍ବୋତ୍ତମ ରେଟିଂ"],
+  "Balances availability, reviews, distance and fee": ["उपलब्धता, समीक्षा, दूरी और शुल्क का संतुलन", "ଉପଲବ୍ଧତା, ସମୀକ୍ଷା, ଦୂରତା ଓ ଶୁଳ୍କର ସନ୍ତୁଳନ"],
+  "Shortest straight-line distance": ["सबसे कम सीधी दूरी", "ସବୁଠାରୁ କମ୍ ସିଧା ଦୂରତା"],
+  "Lowest admission fee": ["सबसे कम भर्ती शुल्क", "ସବୁଠାରୁ କମ୍ ଭର୍ତ୍ତି ଶୁଳ୍କ"],
+  "Highest rating": ["सबसे ऊँची रेटिंग", "ସର୍ବାଧିକ ରେଟିଂ"],
+  "hospital": ["अस्पताल", "ହସ୍ପିଟାଲ"],
+  "hospitals": ["अस्पताल", "ହସ୍ପିଟାଲ"],
+  "Loading map…": ["मानचित्र लोड हो रहा है…", "ମାନଚିତ୍ର ଲୋଡ୍ ହେଉଛି…"],
+  "Numbered = Top": ["क्रमांकित = शीर्ष", "କ୍ରମାଙ୍କିତ = ଶୀର୍ଷ"],
+  "Rings: 2 / 5 / 10 km": ["घेरे: 2 / 5 / 10 किमी", "ବଳୟ: 2 / 5 / 10 କି.ମି."],
+  "Name or address": ["नाम या पता", "ନାମ ବା ଠିକଣା"],
+  "Type": ["प्रकार", "ପ୍ରକାର"],
+  "All types": ["सभी प्रकार", "ସମସ୍ତ ପ୍ରକାର"],
+  "Min rating": ["न्यूनतम रेटिंग", "ସର୍ବନିମ୍ନ ରେଟିଂ"],
+  "Any": ["कोई भी", "ଯେକୌଣସି"],
+  "Max fee (₹)": ["अधिकतम शुल्क (₹)", "ସର୍ବାଧିକ ଶୁଳ୍କ (₹)"],
+  "Availability": ["उपलब्धता", "ଉପଲବ୍ଧତା"],
+  "All": ["सभी", "ସମସ୍ତ"],
+  "Available": ["उपलब्ध", "ଉପଲବ୍ଧ"],
+  "Limited": ["सीमित", "ସୀମିତ"],
+  "Full": ["भरा हुआ", "ପୂର୍ଣ୍ଣ"],
+  "Within (km)": ["दूरी के भीतर (किमी)", "ଦୂରତା ଭିତରେ (କି.ମି.)"],
+  "Recommended only": ["केवल अनुशंसित", "କେବଳ ସୁପାରିଶ"],
+  "Every hospital in the dataset. Click a sortable column to sort; click a row to select it on the map.": ["डेटा के सभी अस्पताल। क्रमबद्ध करने के लिए कॉलम पर क्लिक करें; मानचित्र पर चुनने के लिए पंक्ति पर क्लिक करें।", "ତଥ୍ୟର ସମସ୍ତ ହସ୍ପିଟାଲ। କ୍ରମରେ ସଜାଇବାକୁ ସ୍ତମ୍ଭରେ କ୍ଲିକ୍ କରନ୍ତୁ; ମାନଚିତ୍ରରେ ବାଛିବାକୁ ଧାଡ଼ିରେ କ୍ଲିକ୍ କରନ୍ତୁ।"],
+  "Rank": ["क्रम", "କ୍ରମ"],
+  "Hospital": ["अस्पताल", "ହସ୍ପିଟାଲ"],
+  "Distance": ["दूरी", "ଦୂରତା"],
+  "Fee": ["शुल्क", "ଶୁଳ୍କ"],
+  "Rating": ["रेटिंग", "ରେଟିଂ"],
+  "Reviews": ["समीक्षाएँ", "ସମୀକ୍ଷା"],
+  "Total": ["कुल", "ମୋଟ"],
+  "Free beds": ["खाली बेड", "ଖାଲି ଶଯ୍ୟା"],
+  "Occupancy": ["भरा हुआ %", "ଅଧିକୃତ %"],
+  "Status": ["स्थिति", "ସ୍ଥିତି"],
+  "Directions": ["दिशा-निर्देश", "ରାସ୍ତା ନିର୍ଦ୍ଦେଶ"],
+  "Go": ["जाएँ", "ଯାଆନ୍ତୁ"],
+  "Rec": ["अनु.", "ସୁପା."],
+  "Admission": ["भर्ती", "ଭର୍ତ୍ତି"],
+  "Free": ["निःशुल्क", "ମାଗଣା"],
+  "reviews": ["समीक्षाएँ", "ସମୀକ୍ଷା"],
+  "general-ward beds free": ["जनरल-वार्ड बेड खाली", "ଜେନେରାଲ୍-ୱାର୍ଡ ଶଯ୍ୟା ଖାଲି"],
+  "occupied": ["भरा हुआ", "ଅଧିକୃତ"],
+  "Address": ["पता", "ଠିକଣା"],
+  "Distance (calculated)": ["दूरी (गणना)", "ଦୂରତା (ଗଣନା)"],
+  "Admission fee": ["भर्ती शुल्क", "ଭର୍ତ୍ତି ଶୁଳ୍କ"],
+  "Total general-ward beds": ["कुल जनरल-वार्ड बेड", "ମୋଟ ଜେନେରାଲ୍-ୱାର୍ଡ ଶଯ୍ୟା"],
+  "Available beds": ["उपलब्ध बेड", "ଉପଲବ୍ଧ ଶଯ୍ୟା"],
+  "Recommended score (calculated)": ["अनुशंसा स्कोर (गणना)", "ସୁପାରିଶ ସ୍କୋର (ଗଣନା)"],
+  "Coordinates": ["निर्देशांक", "ସ୍ଥାନାଙ୍କ"],
+  "Invalid / missing": ["अमान्य / अनुपलब्ध", "ଅବୈଧ / ଉପଲବ୍ଧ ନାହିଁ"],
+  "Hospital ID": ["अस्पताल आईडी", "ହସ୍ପିଟାଲ ଆଇଡି"],
+  "Not listed": ["सूचीबद्ध नहीं", "ତାଲିକାରେ ନାହିଁ"],
+  "free admission": ["निःशुल्क भर्ती", "ମାଗଣା ଭର୍ତ୍ତି"],
+  "km": ["किमी", "କି.ମି."],
+  "m": ["मी", "ମି."],
+  "beds free": ["बेड खाली", "ଶଯ୍ୟା ଖାଲି"],
+  "Get directions ↗": ["दिशा-निर्देश ↗", "ରାସ୍ତା ନିର୍ଦ୍ଦେଶ ↗"],
+  "View details": ["विवरण देखें", "ବିବରଣୀ ଦେଖନ୍ତୁ"],
+  "Your location (drag to move)": ["आपका स्थान (खींचकर बदलें)", "ଆପଣଙ୍କ ସ୍ଥାନ (ଟାଣି ବଦଳାନ୍ତୁ)"],
+  "Hospital website": ["अस्पताल वेबसाइट", "ହସ୍ପିଟାଲ ୱେବସାଇଟ୍"],
+  "No website listed in the dataset.": ["डेटा में कोई वेबसाइट नहीं है।", "ତଥ୍ୟରେ କୌଣସି ୱେବସାଇଟ୍ ନାହିଁ।"],
+  "BedRadar · Data from hospitals.csv · Map © OpenStreetMap contributors · Not a medical service.": ["BedRadar · डेटा hospitals.csv से · मानचित्र © OpenStreetMap योगदानकर्ता · यह चिकित्सा सेवा नहीं है।", "BedRadar · ତଥ୍ୟ hospitals.csv ରୁ · ମାନଚିତ୍ର © OpenStreetMap ଅବଦାନକାରୀ · ଏହା ଚିକିତ୍ସା ସେବା ନୁହେଁ।"],
+  "Recommended-mode logic": ["अनुशंसा पद्धति", "ସୁପାରିଶ ପଦ୍ଧତି"],
+  "Higher score is better; ties go to the closer hospital. The score rewards free-bed share and well-reviewed hospitals and penalises distance and admission fee. It is a simple heuristic — not a medically validated measure and no guarantee of the best clinical outcome.": ["अधिक स्कोर बेहतर है; बराबरी पर नज़दीकी अस्पताल आगे। स्कोर खाली बेड और अच्छी समीक्षा को बढ़ाता है तथा दूरी और शुल्क को घटाता है। यह एक सरल अनुमान है — चिकित्सकीय रूप से प्रमाणित नहीं।", "ଅଧିକ ସ୍କୋର ଭଲ; ସମାନ ହେଲେ ନିକଟ ହସ୍ପିଟାଲ ଆଗରେ। ସ୍କୋର ଖାଲି ଶଯ୍ୟା ଓ ଭଲ ସମୀକ୍ଷାକୁ ବଢ଼ାଏ ଏବଂ ଦୂରତା ଓ ଶୁଳ୍କକୁ କମାଏ। ଏହା ଏକ ସରଳ ଅନୁମାନ — ଚିକିତ୍ସାଗତ ଭାବେ ପ୍ରମାଣିତ ନୁହେଁ।"],
+  "BedRadar reads hospital records from hospitals.csv when the page opens.": ["पेज खुलते ही BedRadar hospitals.csv से अस्पताल जानकारी पढ़ता है।", "ପୃଷ୍ଠା ଖୋଲିବା ବେଳେ BedRadar hospitals.csv ରୁ ହସ୍ପିଟାଲ ତଥ୍ୟ ପଢ଼େ।"],
+  "You choose a location: GPS, coordinates, an area, a map click, or by dragging the blue marker.": ["आप स्थान चुनते हैं: GPS, निर्देशांक, क्षेत्र, मानचित्र क्लिक या नीला चिह्न खींचकर।", "ଆପଣ ସ୍ଥାନ ବାଛନ୍ତି: GPS, ସ୍ଥାନାଙ୍କ, ଅଞ୍ଚଳ, ମାନଚିତ୍ର କ୍ଲିକ୍ ବା ନୀଳ ଚିହ୍ନ ଟାଣି।"],
+  "Straight-line distance to each hospital is calculated with the Haversine formula (not road distance).": ["हर अस्पताल की सीधी दूरी हैवरसाइन सूत्र से निकाली जाती है (सड़क दूरी नहीं)।", "ପ୍ରତି ହସ୍ପିଟାଲର ସିଧା ଦୂରତା ହାଭରସାଇନ୍ ସୂତ୍ରରେ ଗଣନା ହୁଏ (ରାସ୍ତା ଦୂରତା ନୁହେଁ)।"],
+  "Hospitals are ranked by the selected mode. Hospitals with zero free beds are always placed last but stay visible.": ["अस्पताल चुनी गई पद्धति से क्रमबद्ध होते हैं। शून्य खाली बेड वाले अंत में रहते हैं पर दिखते रहते हैं।", "ହସ୍ପିଟାଲଗୁଡ଼ିକ ବଛା ପଦ୍ଧତିରେ କ୍ରମିତ ହୁଏ। ଶୂନ ଖାଲି ଶଯ୍ୟା ଥିବା ଶେଷରେ ରହେ କିନ୍ତୁ ଦେଖାଯାଏ।"],
+  "The Top-N slider decides how many top-ranked hospitals get the “Recommended” highlight.": ["शीर्ष-N स्लाइडर तय करता है कि कितने अस्पताल “अनुशंसित” दिखें।", "ଶୀର୍ଷ-N ସ୍ଲାଇଡର୍ ସ୍ଥିର କରେ କେତେ ହସ୍ପିଟାଲ “ସୁପାରିଶ” ଦେଖାଯିବ।"],
+  "Availability labels: Full = 0 beds; Limited = occupancy ≥ 90% or ≤ 10 beds; Available otherwise.": ["उपलब्धता लेबल: भरा हुआ = 0 बेड; सीमित = 90% या अधिक भरा या 10 या कम बेड; अन्यथा उपलब्ध।", "ଉପଲବ୍ଧତା ଲେବେଲ୍: ପୂର୍ଣ୍ଣ = 0 ଶଯ୍ୟା; ସୀମିତ = 90% ବା ଅଧିକ ଅଧିକୃତ ବା 10 ବା କମ୍ ଶଯ୍ୟା; ନଚେତ୍ ଉପଲବ୍ଧ।"],
+  "You can compare and select any hospital, not only the recommended ones.": ["आप किसी भी अस्पताल की तुलना और चयन कर सकते हैं, केवल अनुशंसित ही नहीं।", "ଆପଣ ଯେକୌଣସି ହସ୍ପିଟାଲ ତୁଳନା ଓ ଚୟନ କରିପାରିବେ, କେବଳ ସୁପାରିଶ ନୁହେଁ।"],
+  "Your browser does not support location access. Enter coordinates, pick an area, or click the map instead.": ["आपका ब्राउज़र स्थान सुविधा नहीं देता। निर्देशांक डालें, क्षेत्र चुनें या मानचित्र पर क्लिक करें।", "ଆପଣଙ୍କ ବ୍ରାଉଜର୍ ସ୍ଥାନ ସୁବିଧା ଦିଏ ନାହିଁ। ସ୍ଥାନାଙ୍କ ଦିଅନ୍ତୁ, ଅଞ୍ଚଳ ବାଛନ୍ତୁ ବା ମାନଚିତ୍ରରେ କ୍ଲିକ୍ କରନ୍ତୁ।"],
+  "Requesting your location…": ["आपका स्थान माँगा जा रहा है…", "ଆପଣଙ୍କ ସ୍ଥାନ ମଗାଯାଉଛି…"],
+  "Location found.": ["स्थान मिल गया।", "ସ୍ଥାନ ମିଳିଲା।"],
+  "Location permission was denied. You can still enter coordinates, choose an area, or pick on the map.": ["स्थान अनुमति नहीं मिली। आप निर्देशांक डाल सकते हैं, क्षेत्र चुन सकते हैं या मानचित्र पर चुन सकते हैं।", "ସ୍ଥାନ ଅନୁମତି ମିଳିଲା ନାହିଁ। ଆପଣ ସ୍ଥାନାଙ୍କ ଦେଇପାରିବେ, ଅଞ୍ଚଳ ବା ମାନଚିତ୍ରରେ ବାଛିପାରିବେ।"],
+  "Could not get your location. Please try again or set it manually.": ["स्थान नहीं मिल सका। फिर से प्रयास करें या स्वयं सेट करें।", "ସ୍ଥାନ ମିଳିଲା ନାହିଁ। ପୁଣି ଚେଷ୍ଟା କରନ୍ତୁ ବା ନିଜେ ସେଟ୍ କରନ୍ତୁ।"],
+  "Enter a latitude between −90 and 90 and a longitude between −180 and 180.": ["अक्षांश −90 से 90 और देशांतर −180 से 180 के बीच डालें।", "ଅକ୍ଷାଂଶ −90 ରୁ 90 ଏବଂ ଦ୍ରାଘିମା −180 ରୁ 180 ମଧ୍ୟରେ ଦିଅନ୍ତୁ।"],
+  "Location updated from coordinates.": ["निर्देशांक से स्थान अपडेट हुआ।", "ସ୍ଥାନାଙ୍କରୁ ସ୍ଥାନ ଅଦ୍ୟତନ ହେଲା।"],
+  "Location set on the map.": ["मानचित्र पर स्थान सेट हुआ।", "ମାନଚିତ୍ରରେ ସ୍ଥାନ ସେଟ୍ ହେଲା।"],
+  "Moved to selected area.": ["चुने गए क्षेत्र पर स्थान सेट हुआ।", "ବଛା ଅଞ୍ଚଳକୁ ସ୍ଥାନ ସେଟ୍ ହେଲା।"],
+  // Types & areas
+  "Government": ["सरकारी", "ସରକାରୀ"],
+  "Private": ["निजी", "ଘରୋଇ"],
+  "Bhubaneswar city centre": ["भुवनेश्वर शहर केंद्र", "ଭୁବନେଶ୍ୱର ସହର କେନ୍ଦ୍ର"],
+  "Patia": ["पटिया", "ପଟିଆ"],
+  "Saheed Nagar": ["शहीद नगर", "ସହିଦ ନଗର"],
+  "Khandagiri": ["खंडगिरि", "ଖଣ୍ଡଗିରି"],
+  "Chandrasekharpur": ["चंद्रशेखरपुर", "ଚନ୍ଦ୍ରଶେଖରପୁର"],
+  "Old Town": ["पुराना शहर", "ପୁରୁଣା ସହର"],
+  "Nayapalli": ["नयापल्ली", "ନୟାପଲ୍ଲୀ"],
+  // Hospital names
+  "All India Institute of Medical Sciences, Bhubaneswar": ["अखिल भारतीय आयुर्विज्ञान संस्थान, भुवनेश्वर", "ଅଖିଳ ଭାରତୀୟ ଆୟୁର୍ବିଜ୍ଞାନ ସଂସ୍ଥାନ, ଭୁବନେଶ୍ୱର"],
+  "PGIMER & Capital Hospital Bhubaneswar": ["पीजीआईएमईआर एवं कैपिटल अस्पताल भुवनेश्वर", "ପିଜିଆଇଏମଇଆର ଓ କ୍ୟାପିଟାଲ ହସ୍ପିଟାଲ ଭୁବନେଶ୍ୱର"],
+  "SUM Ultimate Medicare": ["सम अल्टीमेट मेडिकेयर", "ସମ୍ ଅଲ୍ଟିମେଟ୍ ମେଡିକେୟାର"],
+  "CARE Hospitals, Bhubaneswar": ["केयर हॉस्पिटल्स, भुवनेश्वर", "କେୟାର ହସ୍ପିଟାଲ୍ସ, ଭୁବନେଶ୍ୱର"],
+  "Kalinga Hospital": ["कलिंगा अस्पताल", "କଳିଙ୍ଗ ହସ୍ପିଟାଲ"],
+  "Hi-Tech Medical College and Hospital": ["हाई-टेक मेडिकल कॉलेज एवं अस्पताल", "ହାଇ-ଟେକ୍ ମେଡିକାଲ କଲେଜ ଓ ହସ୍ପିଟାଲ"],
+  "Apollo Hospitals Bhubaneswar": ["अपोलो हॉस्पिटल्स भुवनेश्वर", "ଆପୋଲୋ ହସ୍ପିଟାଲ୍ସ ଭୁବନେଶ୍ୱର"],
+  "Manipal Hospitals, Bhubaneswar": ["मणिपाल हॉस्पिटल्स, भुवनेश्वर", "ମଣିପାଲ ହସ୍ପିଟାଲ୍ସ, ଭୁବନେଶ୍ୱର"],
+  "UTKAL HOSPITAL": ["उत्कल अस्पताल", "ଉତ୍କଳ ହସ୍ପିଟାଲ"],
+  "Sparsh Hospitals & Critical Care": ["स्पर्श हॉस्पिटल्स एवं क्रिटिकल केयर", "ସ୍ପର୍ଶ ହସ୍ପିଟାଲ୍ସ ଓ କ୍ରିଟିକାଲ କେୟାର"],
+  "Sunshine Hospital": ["सनशाइन अस्पताल", "ସନସାଇନ୍ ହସ୍ପିଟାଲ"],
+  "Health Village Hospital": ["हेल्थ विलेज अस्पताल", "ହେଲ୍ଥ ଭିଲେଜ୍ ହସ୍ପିଟାଲ"],
+  "IGKC Multispeciality Hospital": ["आईजीकेसी मल्टीस्पेशियलिटी अस्पताल", "ଆଇଜିକେସି ମଲ୍ଟିସ୍ପେସିଆଲିଟି ହସ୍ପିଟାଲ"],
+  "Shree Hospitals": ["श्री हॉस्पिटल्स", "ଶ୍ରୀ ହସ୍ପିଟାଲ୍ସ"],
+  "Sushruta Hospital and Trauma Care": ["सुश्रुत अस्पताल एवं ट्रॉमा केयर", "ସୁଶ୍ରୁତ ହସ୍ପିଟାଲ ଓ ଟ୍ରମା କେୟାର"],
+  "Vivekanand Hospital Bhubaneswar": ["विवेकानंद अस्पताल भुवनेश्वर", "ବିବେକାନନ୍ଦ ହସ୍ପିଟାଲ ଭୁବନେଶ୍ୱର"],
+  "Usthi Hospital": ["उस्थी अस्पताल", "ଉସ୍ଥି ହସ୍ପିଟାଲ"],
+  "Max Hospital Bhubaneswar": ["मैक्स अस्पताल भुवनेश्वर", "ମାକ୍ସ ହସ୍ପିଟାଲ ଭୁବନେଶ୍ୱର"],
+  "Jagannath Hospital": ["जगन्नाथ अस्पताल", "ଜଗନ୍ନାଥ ହସ୍ପିଟାଲ"],
+  "Neelachal Hospital Pvt. Ltd.": ["नीलाचल अस्पताल प्रा. लि.", "ନୀଳାଚଳ ହସ୍ପିଟାଲ ପ୍ରା. ଲି."],
+  "KIIMS BBSR": ["किम्स भुवनेश्वर", "କିମ୍ସ ଭୁବନେଶ୍ୱର"],
+  // Addresses
+  "Sijua, Patrapada": ["सिजुआ, पात्रपड़ा", "ସିଜୁଆ, ପାତ୍ରପଡ଼ା"],
+  "Unit 6, Ganga Nagar": ["यूनिट 6, गंगा नगर", "ୟୁନିଟ୍ 6, ଗଙ୍ଗା ନଗର"],
+  "K8, Kalinga Nagar, Ghatikia": ["के8, कलिंगा नगर, घटिकिया", "କେ8, କଳିଙ୍ଗ ନଗର, ଘଟିକିଆ"],
+  "Plot 324, Prachi Enclave Road, Rail Vihar": ["प्लॉट 324, प्राची एन्क्लेव रोड, रेल विहार", "ପ୍ଲଟ୍ 324, ପ୍ରାଚୀ ଏନକ୍ଲେଭ୍ ରୋଡ୍, ରେଳ ବିହାର"],
+  "Pandra, Rasulgarh": ["पंडरा, रसूलगढ़", "ପଣ୍ଡରା, ରସୁଲଗଡ଼"],
+  "Plot 251, Sainik School Road, Gajapati Nagar": ["प्लॉट 251, सैनिक स्कूल रोड, गजपति नगर", "ପ୍ଲଟ୍ 251, ସୈନିକ ସ୍କୁଲ ରୋଡ୍, ଗଜପତି ନଗର"],
+  "Plot 1, Khandagiri": ["प्लॉट 1, खंडगिरि", "ପ୍ଲଟ୍ 1, ଖଣ୍ଡଗିରି"],
+  "Defence Colony Road, Niladri Vihar": ["डिफेंस कॉलोनी रोड, नीलाद्रि विहार", "ଡିଫେନ୍ସ କଲୋନୀ ରୋଡ୍, ନୀଳାଦ୍ରି ବିହାର"],
+  "A/407, Sparsh Hospital Road, Saheed Nagar": ["ए/407, स्पर्श हॉस्पिटल रोड, शहीद नगर", "ଏ/407, ସ୍ପର୍ଶ ହସ୍ପିଟାଲ ରୋଡ୍, ସହିଦ ନଗର"],
+  "371, Cuttack-Puri Road, Laxmisagar": ["371, कटक-पुरी रोड, लक्ष्मीसागर", "371, କଟକ-ପୁରୀ ରୋଡ୍, ଲକ୍ଷ୍ମୀସାଗର"],
+  "B/13, Indradhanu Market Road, IRC Village": ["बी/13, इंद्रधनु मार्केट रोड, आईआरसी विलेज", "ବି/13, ଇନ୍ଦ୍ରଧନୁ ମାର୍କେଟ ରୋଡ୍, ଆଇଆରସି ଭିଲେଜ୍"],
+  "Ghatikia, Kalinganagar": ["घटिकिया, कलिंगानगर", "ଘଟିକିଆ, କଳିଙ୍ଗନଗର"],
+  "246, Lewis Road, BJB Nagar": ["246, लुईस रोड, बीजेबी नगर", "246, ଲୁଇସ୍ ରୋଡ୍, ବିଜେବି ନଗର"],
+  "Forest Park Road, near Old Airport Square": ["फॉरेस्ट पार्क रोड, पुराने एयरपोर्ट चौक के पास", "ଫରେଷ୍ଟ ପାର୍କ ରୋଡ୍, ପୁରୁଣା ବିମାନବନ୍ଦର ଛକ ନିକଟ"],
+  "A-54/1, Paika Nagar, Baramunda": ["ए-54/1, पाइका नगर, बारामुंडा", "ଏ-54/1, ପାଇକ ନଗର, ବରମୁଣ୍ଡା"],
+  "N4, Plot N4-1/1, IRC Village, Nayapalli": ["एन4, प्लॉट एन4-1/1, आईआरसी विलेज, नयापल्ली", "ଏନ୍4, ପ୍ଲଟ୍ ଏନ୍4-1/1, ଆଇଆରସି ଭିଲେଜ୍, ନୟାପଲ୍ଲୀ"],
+  "Maitri Vihar Road, Chandrasekharpur": ["मैत्री विहार रोड, चंद्रशेखरपुर", "ମୈତ୍ରୀ ବିହାର ରୋଡ୍, ଚନ୍ଦ୍ରଶେଖରପୁର"],
+  "Plot No. 185-P, Rupali Street, Saheed Nagar, Bhubaneswar, Odisha 751007": ["प्लॉट नं. 185-पी, रूपाली स्ट्रीट, शहीद नगर, भुवनेश्वर, ओडिशा 751007", "ପ୍ଲଟ୍ ନଂ. 185-ପି, ରୂପାଲି ଷ୍ଟ୍ରିଟ୍, ସହିଦ ନଗର, ଭୁବନେଶ୍ୱର, ଓଡ଼ିଶା 751007"],
+  "A/84, near Chandrama Apartment, OFDC Colony, Unit 3, Kharvela Nagar, Bhubaneswar, Odisha 751001": ["ए/84, चंद्रमा अपार्टमेंट के पास, ओएफडीसी कॉलोनी, यूनिट 3, खारवेल नगर, भुवनेश्वर, ओडिशा 751001", "ଏ/84, ଚନ୍ଦ୍ରମା ଆପାର୍ଟମେଣ୍ଟ ନିକଟ, ଓଏଫଡିସି କଲୋନୀ, ୟୁନିଟ୍ 3, ଖାରବେଳ ନଗର, ଭୁବନେଶ୍ୱର, ଓଡ଼ିଶା 751001"],
+  "Patia Bhubaneswar": ["पटिया भुवनेश्वर", "ପଟିଆ ଭୁବନେଶ୍ୱର"],
+};
+
+/** Translate an English string (UI text or dataset value) and localise its digits. */
+export function x(en: string | null | undefined, lang: Lang = CURRENT): string {
+  if (en == null) return "";
+  if (lang === "en") return en;
+  const hit = DICT[en];
+  return d(hit ? hit[lang === "hi" ? 0 : 1] : en, lang);
+}
