@@ -2,6 +2,7 @@ import { useEffect, useMemo } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Circle, MapContainer, Marker, Polyline, Popup, TileLayer, useMap, useMapEvents } from "react-leaflet";
+import { x, d, type Lang } from "@/lib/i18n";
 import { directionsUrl, formatFee, formatKm, type LatLng, type RankedHospital } from "@/lib/hospitals";
 
 interface Props {
@@ -14,13 +15,14 @@ interface Props {
   onDetails: (id: string) => void;
   onUserMove: (p: LatLng) => void;
   origin: LatLng | null;
+  lang: Lang;
 }
 
 const userIcon = L.divIcon({ className: "", html: '<div class="br-user"></div>', iconSize: [22, 22], iconAnchor: [11, 11] });
 
 function hospIcon(h: RankedHospital, rec: boolean, sel: boolean) {
   const cls = `br-pin br-${h.status.toLowerCase()} ${rec ? "br-rec" : ""} ${sel ? "br-sel" : ""}`;
-  const label = rec ? String(h.rank) : "";
+  const label = rec ? d(h.rank) : "";
   const size = rec ? 30 : 18;
   return L.divIcon({ className: "", html: `<div class="${cls}">${label}</div>`, iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
 }
@@ -46,7 +48,7 @@ function Controller({ hospitals, user, selectedId, pickMode, onUserMove }: Props
 }
 
 export default function HospitalMap(props: Props) {
-  const { hospitals, user, topN, selectedId, onSelect, onDetails, onUserMove, origin } = props;
+  const { hospitals, user, topN, selectedId, onSelect, onDetails, onUserMove, origin, lang } = props;
   const plotted = useMemo(() => hospitals.filter((h) => h.hasValidCoords), [hospitals]);
   return (
     <MapContainer center={[user.lat, user.lng]} zoom={12} className="h-full w-full" scrollWheelZoom>
@@ -70,7 +72,7 @@ export default function HospitalMap(props: Props) {
           const rec = h.rank <= topN;
           return (
             <Marker
-              key={h.id}
+              key={`${h.id}-${lang}`}
               position={[h.lat!, h.lng!]}
               icon={hospIcon(h, rec, h.id === selectedId)}
               zIndexOffset={h.id === selectedId ? 2000 : rec ? 1000 : 0}
@@ -78,11 +80,11 @@ export default function HospitalMap(props: Props) {
             >
               <Popup>
                 <div className="br-popup">
-                  <strong>#{h.rank} · {h.name}</strong>
+                  <strong>#{d(h.rank)} · {x(h.name)}</strong>
                   <div>{formatKm(h.distance)} · {formatFee(h.fee)}</div>
-                  <div>★ {h.rating ?? "—"} · {h.availableBeds ?? "—"} beds free ({h.status})</div>
-                  <button type="button" onClick={() => onDetails(h.id)}>View details</button>
-                  {directionsUrl(h, origin) && <a className="br-dir" href={directionsUrl(h, origin)!} target="_blank" rel="noreferrer">Get directions ↗</a>}
+                  <div>★ {h.rating !== null ? d(h.rating) : "—"} · {h.availableBeds !== null ? d(h.availableBeds) : "—"} {x("beds free")} ({x(h.status)})</div>
+                  <button type="button" onClick={() => onDetails(h.id)}>{x("View details")}</button>
+                  {directionsUrl(h, origin) && <a className="br-dir" href={directionsUrl(h, origin)!} target="_blank" rel="noreferrer">{x("Get directions ↗")}</a>}
                 </div>
               </Popup>
             </Marker>
@@ -95,7 +97,7 @@ export default function HospitalMap(props: Props) {
         zIndexOffset={3000}
         eventHandlers={{ dragend: (e) => { const p = (e.target as L.Marker).getLatLng(); onUserMove({ lat: p.lat, lng: p.lng }); } }}
       >
-        <Popup>Your location (drag to move)</Popup>
+        <Popup>{x("Your location (drag to move)")}</Popup>
       </Marker>
     </MapContainer>
   );

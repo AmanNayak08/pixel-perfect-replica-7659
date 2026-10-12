@@ -1,4 +1,5 @@
 import Papa from "papaparse";
+import { d, x } from "./i18n";
 
 export interface Hospital {
   id: string;
@@ -124,10 +125,16 @@ export function classifyStatus(h: Hospital): Status {
   return "Available";
 }
 
-/** Score = −Admission Fee − Distance (km) + 1000 × Rating */
-export function recommendedScore(fee: number | null, distance: number | null, rating: number | null) {
-  if (fee === null || distance === null || rating === null) return null;
-  return -fee - distance + 1000 * rating;
+/**
+ * Score = A×1000 + X/1000 − Y×100 − Z/10
+ * A = availability % (100 − occupancy %), X = rating × review count,
+ * Y = distance in km, Z = admission fee in ₹.
+ */
+export function recommendedScore(h: Hospital, distance: number | null) {
+  if (h.occupancy === null || h.rating === null || h.reviews === null || distance === null || h.fee === null) return null;
+  const A = 100 - h.occupancy;
+  const X = h.rating * h.reviews;
+  return A * 1000 + X / 1000 - distance * 100 - h.fee / 10;
 }
 
 export function rankHospitals(list: Hospital[], user: LatLng | null, mode: Mode): RankedHospital[] {
@@ -138,7 +145,7 @@ export function rankHospitals(list: Hospital[], user: LatLng | null, mode: Mode)
       ...h,
       hasValidCoords: ok,
       distance,
-      score: recommendedScore(h.fee, distance, h.rating),
+      score: recommendedScore(h, distance),
       status: classifyStatus(h),
       rank: 0,
     };
@@ -183,6 +190,7 @@ export function directionsUrl(h: Hospital, origin: LatLng | null): string | null
 
 const inr = new Intl.NumberFormat("en-IN");
 export const formatFee = (fee: number | null) =>
-  fee === null ? "Not listed" : fee === 0 ? "₹0 (free admission)" : `₹${inr.format(fee)}`;
-export const formatNum = (n: number | null) => (n === null ? "—" : inr.format(n));
-export const formatKm = (d: number | null) => (d === null ? "—" : d < 1 ? `${Math.round(d * 1000)} m` : `${d.toFixed(1)} km`);
+  fee === null ? x("Not listed") : fee === 0 ? d(`₹0 (${x("free admission")})`) : d(`₹${inr.format(fee)}`);
+export const formatNum = (n: number | null) => (n === null ? "—" : d(inr.format(n)));
+export const formatKm = (km: number | null) =>
+  km === null ? "—" : km < 1 ? d(`${Math.round(km * 1000)} ${x("m")}`) : d(`${km.toFixed(1)} ${x("km")}`);
