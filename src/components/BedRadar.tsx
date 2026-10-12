@@ -342,7 +342,7 @@ export default function BedRadar() {
               </thead>
               <tbody>
                 {tableRows.map((h) => {
-                  const rec = h.rank <= topN; const d = directionsUrl(h, origin);
+                  const rec = h.rank <= topN; const dirUrl = directionsUrl(h, origin);
                   return (
                     <tr key={h.id} onClick={() => setSelectedId(h.id)} className={`cursor-pointer border-t border-border ${h.id === selectedId ? "bg-locate-soft" : rec ? "bg-accent/50" : "hover:bg-muted"}`}>
                       <td className="px-3 py-2.5 font-bold">#{d(h.rank)}{rec && <span className="ml-1 rounded bg-primary px-1.5 py-0.5 text-[10px] text-primary-foreground">{x("Rec")}</span>}</td>
@@ -356,7 +356,7 @@ export default function BedRadar() {
                       <td className="px-3 py-2.5 font-semibold tabular-nums">{formatNum(h.availableBeds)}</td>
                       <td className="px-3 py-2.5 tabular-nums">{h.occupancy !== null ? d(`${h.occupancy}%`) : "—"}</td>
                       <td className="px-3 py-2.5"><StatusBadge lang={lang} s={h.status} /></td>
-                      <td className="px-3 py-2.5">{d ? <a href={d} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold text-locate" onClick={(e) => e.stopPropagation()}><Navigation className="h-3.5 w-3.5" />{x("Go")}</a> : "—"}</td>
+                      <td className="px-3 py-2.5">{dirUrl ? <a href={dirUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold text-locate" onClick={(e) => e.stopPropagation()}><Navigation className="h-3.5 w-3.5" />{x("Go")}</a> : "—"}</td>
                     </tr>
                   );
                 })}
@@ -385,7 +385,7 @@ export default function BedRadar() {
 }
 
 function HospitalCard({ h, rec, selected, origin, lang, onSelect, onDetails }: { lang: Lang; h: RankedHospital; rec: boolean; selected: boolean; origin: LatLng | null; onSelect: () => void; onDetails: () => void }) {
-  const d = directionsUrl(h, origin);
+  const dirUrl = directionsUrl(h, origin);
   const pct = h.totalBeds && h.availableBeds !== null ? Math.min(100, (h.availableBeds / h.totalBeds) * 100) : 0;
   return (
     <article id={`card-${h.id}`} onClick={onSelect}
@@ -411,7 +411,7 @@ function HospitalCard({ h, rec, selected, origin, lang, onSelect, onDetails }: {
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
         <button className={`${btnGhost} flex-1`} onClick={(e) => { e.stopPropagation(); onDetails(); }}>{t(lang, "viewDetails")}</button>
-        {d && <a href={d} target="_blank" rel="noreferrer" className={`${btnLocate} flex-1`} onClick={(e) => e.stopPropagation()}><Navigation className="h-4 w-4" />{t(lang, "directions")}</a>}
+        {dirUrl && <a href={dirUrl} target="_blank" rel="noreferrer" className={`${btnLocate} flex-1`} onClick={(e) => e.stopPropagation()}><Navigation className="h-4 w-4" />{t(lang, "directions")}</a>}
         {h.website && <a href={h.website} target="_blank" rel="noreferrer" className={btnGhost} onClick={(e) => e.stopPropagation()} aria-label="Website"><ExternalLink className="h-4 w-4" /></a>}
       </div>
     </article>
@@ -419,7 +419,7 @@ function HospitalCard({ h, rec, selected, origin, lang, onSelect, onDetails }: {
 }
 
 function DetailsPanel({ h, rec, mode, origin, lang, onClose }: { lang: Lang; h: RankedHospital; rec: boolean; mode: Mode; origin: LatLng | null; onClose: () => void }) {
-  const d = directionsUrl(h, origin);
+  const dirUrl = directionsUrl(h, origin);
   useEffect(() => { const k = (e: KeyboardEvent) => e.key === "Escape" && onClose(); window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [onClose]);
   const rows: [string, string][] = [
     ["Type", h.type ? x(h.type) : "—"], ["Address", h.address ? x(h.address) : "—"], ["Distance (calculated)", formatKm(h.distance)], ["Admission fee", formatFee(h.fee)],
@@ -441,7 +441,7 @@ function DetailsPanel({ h, rec, mode, origin, lang, onClose }: { lang: Lang; h: 
         </dl>
         <p className="mt-4 rounded-lg bg-limited-soft p-3 text-xs">{t(lang, "disclaimer")}</p>
         <div className="mt-4 grid gap-2">
-          {d && <a href={d} target="_blank" rel="noreferrer" className={btnLocate}><Navigation className="h-4 w-4" />{t(lang, "getDirections")}</a>}
+          {dirUrl && <a href={dirUrl} target="_blank" rel="noreferrer" className={btnLocate}><Navigation className="h-4 w-4" />{t(lang, "getDirections")}</a>}
           {h.website ? <a href={h.website} target="_blank" rel="noreferrer" className={btnGhost}><ExternalLink className="h-4 w-4" />{x("Hospital website")}</a> : null}
           <button className={btnGhost} onClick={onClose}>{t(lang, "back")}</button>
         </div>
